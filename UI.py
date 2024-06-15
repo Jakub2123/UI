@@ -229,8 +229,8 @@ class MyWindow(QWidget):
 
         # Table for DB
         self.tableWidget = QTableWidget()
-        self.tableWidget.setColumnCount(9)
-        col_names = ['ID', 'Start Date', 'Finish Date', 'Event Date', 'Handover Type', 'Requestor CA/QA',
+        self.tableWidget.setColumnCount(30)
+        col_names = ['ID', 'Start Date', 'Finish Date', 'Event Date', 'Handover Type', 'Requestor CA/ DH',
                      'Report name', 'Case Entered', 'Requestor GPN', 'Rank', 'No of Invoices', 'Number of credit card line items', 'No of cash expenses',
                       'Number of Iterations', 'Total entered line items', 'Case Closed', 'Case Pending',
                       'Time spent total in min', 'Receipt email', 'Confirmation email', 'Reason if pending',
@@ -332,10 +332,12 @@ class MyWindow(QWidget):
 
     def holdTime(self):
         if self.hold_start is None:
+            print('Case 1')
             self.hold_start = datetime.now()
             self.holdLabel.setText("Timing...")
         else:
             hold_end = datetime.now()
+            print('Case 2')
             elapsedtime = hold_end - self.hold_start
             elapsed_min = elapsedtime.total_seconds() / 60
             self.holdLabel.setText(str(elapsed_min))
@@ -355,24 +357,21 @@ class MyWindow(QWidget):
         # Fix bug of adding new case and it is blank and not editable
         name="Jakub Wloka"
 
-        '''Start Date', 'Finish Date', 'Event Date', 'Handover Type', 'Requestor CA/QA',
-                     'Report name', 'Case Entered', 'Requestor GPN', 'Rank', 'No of Invoices', 'Number of credit card line items', 'No of cash expenses',
-                      'Number of Iterations', 'Total entered line items', 'Case Closed', 'Case Pending',
-                      'Time spent total in min', 'Receipt email', 'Confirmation email', 'Reason if pending',
-                      'Date of Action', 'Total Hold Time', 'Hold Continue', 'Hold Time', 'Action', 'Current Status',
-                      'Received Date', 'Total Hold Time', 'Hold Continue'''
-
-        sql = ('INSERT INTO [Expense_Management] ([Start Date], [Finish Date], [Event Date], [Handover Type], '
-               '[Requestor CA/ DH], [Report name], [Case entered by], [Requester GPN], '
+        '''sql = ('INSERT INTO [Expense_Management] ([Start Date], [Finish Date], [Event Date], [Handover Type], '
+               '[Requestor CA/ DH], [TripID], [Report name], [Case entered by], [Requester GPN], '
                '[Number of credit card line items], [No of cash expenses], [Number of Iterations], '
                '[Case Closed], [Case Pending], [Time spent total in min], [Receipt email], [Confirmation email], '
                '[Date of Action], [Action], [Current Status], [Received Date], [Total Hold Time], [Hold Continue], '
                'VALUES (NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '
-               'NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)')
+               'NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)')'''
+
+        sql = ('INSERT INTO [Expense_Management] ([Start Date])'
+               'VALUES (NULL)')
         try:
 
             self.cursor.execute(sql)
             self.conn.commit()
+            print('records added')
 
             # Obtain new ID
             self.cursor.execute('SELECT @@IDENTITY')
@@ -382,15 +381,15 @@ class MyWindow(QWidget):
             print(f"Error entering New Case: {e}")
             QMessageBox.critical(self, 'Error', 'Error entering New Case')
 
-            # manual fill the TableWidget
-            row_count = self.tableWidget.rowCount()
-            self.tableWidget.insertRow(row_count)
-            #self.tableWidget.setItem(row_count, 0, QTableWidgetItem(user_name))
-            self.tableWidget.setItem(row_count, 1, QTableWidgetItem(str(new_id)))
-            self.loadtableData()
-            self.SelectNewCase()
-            print("Record added successfully")
-            QMessageBox.information(self, 'New Case', 'New Case added')
+        # manual fill the TableWidget
+        row_count = self.tableWidget.rowCount()
+        self.tableWidget.insertRow(row_count)
+        #self.tableWidget.setItem(row_count, 0, QTableWidgetItem(user_name))
+        self.tableWidget.setItem(row_count, 1, QTableWidgetItem(str(new_id)))
+        self.loadtableData()
+        self.SelectNewCase()
+        print("Record added successfully")
+        QMessageBox.information(self, 'New Case', 'New Case added')
 
 
     def save(self):
@@ -436,11 +435,42 @@ class MyWindow(QWidget):
             self.tableWidget.setItem(self.currentrow, 17, QTableWidgetItem(datetext))
             self.tableWidget.setItem(self.currentrow, 18, QTableWidgetItem(holdtext))
 
-            sql = "UPDATE [Expense_Management] SET [Case entered by]=?, [Start Date]=?, [Finish Date]=?, [Hold]=?, [Date]=?, [Handover]=?, [Requestor]=?, [Iterations]=?, [Invoices]=?, [Line Items]=?, [Time Spent]=?, [Reason]=?, [Action]=?, [Status]=?, [Date]=?, [Hold Time]=? WHERE [ID]=?"
+            print("Parameters:", case,",", starttext,",", finishtext,",", datetext,",", handover,",", nr_iter,",", invoices,",", line,",", value)
+
+
+            #sql = "UPDATE [Expense_Management] SET [Case entered by]=?, [Start Date]=?, [Finish Date]=?, [Received Date]=?, [Handover Type]=?, [Number of Iterations]=?, [No of Invoices]=?, [Total entered line items]=? WHERE [ID]=?"
+
+            sql = """
+                UPDATE [Expense_Management] 
+                SET 
+                    [Case entered by]=?,
+                    [Start Date]=?,
+                    [Finish Date]=?,
+                    [Received Date]=?,
+                    [Handover Type]=?,
+                    [Number of Iterations]=?,
+                    [Action]=?,
+                    [Current Status]=?,
+                    [Report name]=?,
+                    [Requester GPN]=?
+                WHERE [ID]=?
+            """
+
             self.cursor.execute(sql, (
-            case, starttext, finishtext, holdtext, datetext, handover, requestor, nr_iter, invoices, line, time_spend, reason,
-            action, status, datetext, holdtext, value))
+                case,
+                starttext,
+                finishtext,
+                datetext,
+                handover,
+                nr_iter,
+                action,
+                status,
+                report,
+                requestorG,
+                value  # ID
+            ))
             self.conn.commit()
+
             print("Data saved successfully")
             QMessageBox.information(self, 'Info', 'Data saved successfully')
 
@@ -468,41 +498,46 @@ class MyWindow(QWidget):
         else:
             print("Deletion cancelled")
 
-
     def doubleClick(self, _item):
-        self.currentrow = None
         self.currentrow = self.tableWidget.currentRow()
 
-
-        clickedID = self.tableWidget.item(self.currentrow, 0).text()  # ID
+        clickedID = self.tableWidget.item(self.currentrow, 0).text() if self.tableWidget.item(self.currentrow,
+                                                                                              0) else "No ID"
         self.id_label.setText(f"Selected ID: {clickedID}")
 
-        startdate = self.tableWidget.item(self.currentrow, 1).text()  # Start Date
-        finishdate = self.tableWidget.item(self.currentrow, 2).text()  # Finish Date
-        holdtime = self.tableWidget.item(self.currentrow, 28).text()  # HoldTime
-        receivedate = self.tableWidget.item(self.currentrow, 25).text()  # Receive Date
-        case = self.tableWidget.item(self.currentrow, 8).text()  # Case entered by
-        invoices = self.tableWidget.item(self.currentrow, 10).text()  # no of inv
-        requestor = self.tableWidget.item(self.currentrow, 5).text()  # requestor
-        status = self.tableWidget.item(self.currentrow, 24).text()  # status
-        trip = self.tableWidget.item(self.currentrow, 6).text()  # trip ID
-        report = self.tableWidget.item(self.currentrow, 7).text()  # report name
-        iter = self.tableWidget.item(self.currentrow, 14).text()  # nr of iterations
-        requestorG = self.tableWidget.item(self.currentrow, 9).text()  # requestor GPN
-        reason = self.tableWidget.item(self.currentrow, 21).text()  # reason of pending
-        action = self.tableWidget.item(self.currentrow, 23).text()  # action
-        line = self.tableWidget.item(self.currentrow, 15).text()  # Nr of line items
-        time_spend = self.tableWidget.item(self.currentrow, 18).text()  # Total time spend
-        handover = self.tableWidget.item(self.currentrow, 4).text()  # Handover type
+        # Define a helper function to safely get text from table items
+        def get_text(row, col):
+            item = self.tableWidget.item(row, col)
+            return item.text() if item else ""
 
-        date = QDate.fromString(receivedate, 'dd/MM/yyyy')  # Start Date
+        # Use the helper function to get the text for each field
+        startdate = get_text(self.currentrow, 1)  # Start Date
+        finishdate = get_text(self.currentrow, 2)  # Finish Date
+        holdtime = get_text(self.currentrow, 28)  # Hold Time
+        receivedate = get_text(self.currentrow, 25)  # Receive Date
+        case = get_text(self.currentrow, 8)  # Case entered by
+        invoices = get_text(self.currentrow, 10)  # no of inv
+        requestor = get_text(self.currentrow, 5)  # requestor
+        status = get_text(self.currentrow, 24)  # status
+        trip = get_text(self.currentrow, 6)  # trip ID
+        report = get_text(self.currentrow, 7)  # report name
+        iter = get_text(self.currentrow, 14)  # nr of iterations
+        requestorG = get_text(self.currentrow, 9)  # requestor GPN
+        reason = get_text(self.currentrow, 21)  # reason of pending
+        action = get_text(self.currentrow, 23)  # action
+        line = get_text(self.currentrow, 15)  # Nr of line items
+        time_spend = get_text(self.currentrow, 18)  # Total time spend
+        handover = get_text(self.currentrow, 4)  # Handover type
+
+        date = QDate.fromString(receivedate, 'dd/MM/yyyy') if receivedate else QDate.currentDate()
+
+        # Set the values in the corresponding fields
         self.startLabel.setText(startdate)
         self.finishLabel.setText(finishdate)
         self.holdLabel.setText(holdtime)
-        self.entered_by_txt.setCurrentText(case)
+        self.receive_date.setDate(date)
         self.entered_by_txt.setCurrentText(case)
         self.invoice_txt.setText(invoices)
-        self.receive_date.setDate(date)
         self.requestor_txt.setText(requestor)
         self.status_txt.setCurrentText(status)
         self.report_txt.setText(report)
@@ -515,51 +550,56 @@ class MyWindow(QWidget):
         self.total_time_txt.setText(time_spend)
         self.handover_txt.setCurrentText(handover)
 
-
     def SelectNewCase(self):
         if self.tableWidget.rowCount() > 0:
             self.tableWidget.selectRow(0)
             self.tableWidget.scrollToItem(self.tableWidget.item(0, 0), QAbstractItemView.PositionAtTop)
 
-            clickedID = self.tableWidget.item(0, 0).text()  # ID
-            self.idLabel.setText(f"Selected ID: {clickedID}")
+            # Define a helper function to safely get text from table items
+            def get_text(row, col):
+                item = self.tableWidget.item(row, col)
+                return item.text() if item else ""
 
+            # Use the helper function to safely extract text values from each cell
+            clickedID = get_text(0, 0)  # ID
+            startdate = get_text(0, 1)  # Start Date
+            finishdate = get_text(0, 2)  # Finish Date
+            holdtime = get_text(0, 28)  # HoldTime
+            receivedate = get_text(0, 25)  # Receive Date
+            case = get_text(0, 8)  # Case entered by
+            invoices = get_text(0, 10)  # no of inv
+            requestor = get_text(0, 5)  # requestor
+            status = get_text(0, 24)  # status
+            trip = get_text(0, 6)  # trip ID
+            report = get_text(0, 7)  # report name
+            iter = get_text(0, 14)  # nr of iterations
+            requestorG = get_text(0, 9)  # requestor GPN
+            reason = get_text(0, 21)  # reason of pending
+            action = get_text(0, 23)  # action
+            line = get_text(0, 15)  # Nr of line items
+            time_spend = get_text(0, 18)  # Total time spend
+            handover = get_text(0, 4)  # Handover type
 
-            startdate = self.tableWidget.item(0, 1).text()  # Start Date
-            finishdate = self.tableWidget.item(0, 2).text()  # Finish Date
-            holdtime = self.tableWidget.item(0, 28).text()  # HoldTime
-            receivedate = self.tableWidget.item(0, 25).text()  # Receive Date
-            case = self.tableWidget.item(0, 8).text()  # Case entered by
-            invoices = self.tableWidget.item(0, 10).text()  # no of inv
-            requestor = self.tableWidget.item(0, 5).text()  # requestor
-            status = self.tableWidget.item(0, 24).text()  # status
-            trip = self.tableWidget.item(0, 6).text()  # trip ID
-            report = self.tableWidget.item(0, 7).text()  # report name
-            iter = self.tableWidget.item(0, 14).text()  # nr of iterations
-            requestorG = self.tableWidget.item(0, 9).text()  # requestor GPN
-            reason = self.tableWidget.item(0, 21).text()  # reason of pending
-            action = self.tableWidget.item(0, 23).text()  # action
-            line = self.tableWidget.item(0, 15).text()  # Nr of line items
-            time_spend = self.tableWidget.item(0, 18).text()  # Total time spend
-            handover = self.tableWidget.item(0, 4).text()  # Handover type
-
-            self.startLabel.setText(startdate)  # Start Date
-            self.finishLabel.setText(finishdate)  # Finish Date
-            self.holdLabel.setText(holdtime)  # HoldTime
-            self.entered_by_txt.setCurrentText(case)  # Case entered by
-            self.invoice_txt.setText(invoices)  # no of inv
-            self.receive_date.setDate(QDate.currentDate())  # Receive Date
-            self.requestor_txt.setText(requestor)  # requestor
-            self.status_txt.setCurrentText(status)  # status
-            self.report_txt.setText(report)  # report name
-            self.trip_txt.setText(trip)  # trip ID
-            self.nr_of_iter_txt.setCurrentText(iter)  # nr of iterations
-            self.requestorG_txt.setText(requestorG)  # requestor GPN
-            self.reason_txt.setText(reason)  # reason of pending
-            self.action_txt.setText(action)  # action
-            self.line_txt.setText(line)  # Nr of line items
-            self.total_time_txt.setText(time_spend)  # Total time spend
-            self.handover_txt.setCurrentText(handover)  # Handover type
+            # Set the values in the corresponding fields
+            self.startLabel.setText(startdate)
+            self.finishLabel.setText(finishdate)
+            self.holdLabel.setText(holdtime)
+            self.entered_by_txt.setCurrentText(case)
+            self.invoice_txt.setText(invoices)
+            self.receive_date.setDate(
+                QDate.fromString(receivedate, 'dd/MM/yyyy') if receivedate else QDate.currentDate())
+            self.requestor_txt.setText(requestor)
+            self.status_txt.setCurrentText(status)
+            self.report_txt.setText(report)
+            self.trip_txt.setText(trip)
+            self.nr_of_iter_txt.setCurrentText(iter)
+            self.requestorG_txt.setText(requestorG)
+            self.reason_txt.setText(reason)
+            self.action_txt.setText(action)
+            self.line_txt.setText(line)
+            self.total_time_txt.setText(time_spend)
+            self.handover_txt.setCurrentText(handover)
+            self.id_label.setText(f"Selected ID: {clickedID}")
 
 
     def filter(self):
@@ -599,18 +639,9 @@ class MyWindow(QWidget):
         start_date_str = self.startLabel.text()
         hold_time_str = self.holdLabel.text()
 
-        # Uncomment the following line if you want to return from the function when start or finish date is not set
-        # if not self.finishLabel.text() or not self.startLabel.text():
-        #     return
-
         try:
             hold_time_min = float(hold_time_str.split()[0])
-        except:
-            hold_time_min = 0
-
-
-        try:
-            hold_time_min = float(hold_time_str.split()[0])
+            #print('case1')
         except:
             hold_time_min = 0
 
@@ -629,15 +660,7 @@ class MyWindow(QWidget):
 
         try:
             total_time = (finish_date - start_date).total_seconds() / 60 - hold_time_min
-        except:
-            return
-
-        minutes = int(total_time)
-        seconds = int((total_time - minutes) * 60)
-
-        total_time_str = f"{minutes:02d}:{seconds:02d} min"
-        try:
-            total_time = (finish_date - start_date).total_seconds() / 60 - hold_time_min
+            #print('case2')
         except:
             return
 
