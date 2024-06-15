@@ -1,3 +1,6 @@
+Application/User interface for tracking and storing data for multiple end users daily work.
+
+
 Description of used functions:
 
 **initUI**
