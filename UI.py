@@ -505,7 +505,6 @@ class MyWindow(QWidget):
                                                                                               0) else "No ID"
         self.id_label.setText(f"Selected ID: {clickedID}")
 
-        # Define a helper function to safely get text from table items
         def get_text(row, col):
             item = self.tableWidget.item(row, col)
             return item.text() if item else ""
@@ -555,12 +554,12 @@ class MyWindow(QWidget):
             self.tableWidget.selectRow(0)
             self.tableWidget.scrollToItem(self.tableWidget.item(0, 0), QAbstractItemView.PositionAtTop)
 
-            # Define a helper function to safely get text from table items
+
             def get_text(row, col):
                 item = self.tableWidget.item(row, col)
                 return item.text() if item else ""
 
-            # Use the helper function to safely extract text values from each cell
+
             clickedID = get_text(0, 0)  # ID
             startdate = get_text(0, 1)  # Start Date
             finishdate = get_text(0, 2)  # Finish Date
@@ -629,6 +628,8 @@ class MyWindow(QWidget):
 
             self.tableWidget.clearContents()
             self.tableWidget.setRowCount(len(rows))
+
+            self.loadtableData()
 
         except Exception as e:
             print(f"Error: {e}")
