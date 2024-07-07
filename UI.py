@@ -332,12 +332,10 @@ class MyWindow(QWidget):
 
     def holdTime(self):
         if self.hold_start is None:
-            print('Case 1')
             self.hold_start = datetime.now()
             self.holdLabel.setText("Timing...")
         else:
             hold_end = datetime.now()
-            print('Case 2')
             elapsedtime = hold_end - self.hold_start
             elapsed_min = elapsedtime.total_seconds() / 60
             self.holdLabel.setText(str(elapsed_min))
@@ -435,7 +433,7 @@ class MyWindow(QWidget):
             self.tableWidget.setItem(self.currentrow, 17, QTableWidgetItem(datetext))
             self.tableWidget.setItem(self.currentrow, 18, QTableWidgetItem(holdtext))
 
-            print("Parameters:", case,",", starttext,",", finishtext,",", datetext,",", handover,",", nr_iter,",", invoices,",", line,",", value)
+            print("Parameters:", case, starttext, finishtext, datetext, handover, nr_iter, invoices, line, value)
 
 
             #sql = "UPDATE [Expense_Management] SET [Case entered by]=?, [Start Date]=?, [Finish Date]=?, [Received Date]=?, [Handover Type]=?, [Number of Iterations]=?, [No of Invoices]=?, [Total entered line items]=? WHERE [ID]=?"
@@ -443,16 +441,14 @@ class MyWindow(QWidget):
             sql = """
                 UPDATE [Expense_Management] 
                 SET 
-                    [Case entered by]=?,
-                    [Start Date]=?,
-                    [Finish Date]=?,
-                    [Received Date]=?,
-                    [Handover Type]=?,
-                    [Number of Iterations]=?,
-                    [Action]=?,
-                    [Current Status]=?,
-                    [Report name]=?,
-                    [Requester GPN]=?
+                    [Case entered by]=?, 
+                    [Start Date]=?, 
+                    [Finish Date]=?, 
+                    [Received Date]=?, 
+                    [Handover Type]=?, 
+                    [Number of Iterations]=?, 
+                    [No of Invoices]=?, 
+                    [Time spent total in min]=?
                 WHERE [ID]=?
             """
 
@@ -463,11 +459,9 @@ class MyWindow(QWidget):
                 datetext,
                 handover,
                 nr_iter,
-                action,
-                status,
-                report,
-                requestorG,
-                value  # ID
+                invoices,
+                time_spend,
+                value  # Assuming 'value' is the ID for the WHERE clause
             ))
             self.conn.commit()
 
@@ -505,6 +499,7 @@ class MyWindow(QWidget):
                                                                                               0) else "No ID"
         self.id_label.setText(f"Selected ID: {clickedID}")
 
+        # Define a helper function to safely get text from table items
         def get_text(row, col):
             item = self.tableWidget.item(row, col)
             return item.text() if item else ""
@@ -554,12 +549,12 @@ class MyWindow(QWidget):
             self.tableWidget.selectRow(0)
             self.tableWidget.scrollToItem(self.tableWidget.item(0, 0), QAbstractItemView.PositionAtTop)
 
-
+            # Define a helper function to safely get text from table items
             def get_text(row, col):
                 item = self.tableWidget.item(row, col)
                 return item.text() if item else ""
 
-
+            # Use the helper function to safely extract text values from each cell
             clickedID = get_text(0, 0)  # ID
             startdate = get_text(0, 1)  # Start Date
             finishdate = get_text(0, 2)  # Finish Date
@@ -629,8 +624,6 @@ class MyWindow(QWidget):
             self.tableWidget.clearContents()
             self.tableWidget.setRowCount(len(rows))
 
-            self.loadtableData()
-
         except Exception as e:
             print(f"Error: {e}")
 
@@ -640,9 +633,18 @@ class MyWindow(QWidget):
         start_date_str = self.startLabel.text()
         hold_time_str = self.holdLabel.text()
 
+        # Uncomment the following line if you want to return from the function when start or finish date is not set
+        # if not self.finishLabel.text() or not self.startLabel.text():
+        #     return
+
         try:
             hold_time_min = float(hold_time_str.split()[0])
-            #print('case1')
+        except:
+            hold_time_min = 0
+
+
+        try:
+            hold_time_min = float(hold_time_str.split()[0])
         except:
             hold_time_min = 0
 
@@ -661,7 +663,15 @@ class MyWindow(QWidget):
 
         try:
             total_time = (finish_date - start_date).total_seconds() / 60 - hold_time_min
-            #print('case2')
+        except:
+            return
+
+        minutes = int(total_time)
+        seconds = int((total_time - minutes) * 60)
+
+        total_time_str = f"{minutes:02d}:{seconds:02d} min"
+        try:
+            total_time = (finish_date - start_date).total_seconds() / 60 - hold_time_min
         except:
             return
 
