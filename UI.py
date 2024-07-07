@@ -1,32 +1,26 @@
+'''
+- przy delete usuwanie pzry zaznaczeniu calego rowa
+- case entered by dorobic w excelu
+-table do DB do excela ( moze zczytaj z accesa ( mzoe sql query na zczytanie column header)
+-po sottowaniu psuje sie
+-zrob validacje ( lost focus) na polach typu date
+-przy filtrowaniu przemtysl czy excepty sa potrzebne
+**particion table
+
+'''
+
 import sys
+from pathlib import Path
 import pyodbc
-import os
-from datetime import datetime, timedelta
+import pandas as pd
+from datetime import datetime
 from PySide2.QtWidgets import QApplication, QVBoxLayout, QPushButton, QWidget, QLabel, QTableWidget, \
     QAbstractItemView
 from PySide2.QtWidgets import QMessageBox, QTableWidgetItem, QGridLayout, QLineEdit, QComboBox, QDateEdit
-from PySide2.QtCore import Qt, QDateTime, QTime, QDate
-from PySide2.QtGui import QColor, QFont
-
-'''
-def get_user_name():
-    user_table = {
-        't545751': 'Jan Fasola',
-        't721851': 'Jakub Wlóka',
-        't594826': 'Tsering Dukatsang',
-        't659628': 'Gianmarco Patazzi',
-        't127675': 'Priska Dörfinger',
-        't114659': 'Angelo Peréz',
-        't609321': 'Verona Nehertepe',
-        't595527': 'Liri Osman',
-        't657331': 'Salvi De Biassi'
-    }
+from PySide2.QtCore import Qt, QDateTime, QDate
+from PySide2.QtGui import QFont
 
 
-def new_id(self):
-    t_number = os.getlogin()
-    return user_table.get(t_number, "New user")
-'''
 
 class MyWindow(QWidget):
     def __init__(self):
@@ -41,6 +35,13 @@ class MyWindow(QWidget):
         self.setWindowTitle("Expense Management")
         self.setGeometry(100, 100, 900, 900)
 
+    def get_user_name(self):
+
+        excel_path = Path(__file__).parent / "Book.xlsx"
+        df = pd.read_excel(excel_path)
+        names = df['Name'].dropna().unique().tolist()
+        self.entered_by_txt.addItems(names)
+
     # Set UI Layout
     def initUI(self):
         mainLayout = QVBoxLayout()
@@ -50,6 +51,7 @@ class MyWindow(QWidget):
 
         # Add new case button
         gridLayout = QGridLayout()
+
         # Add new case button
         self.newCaseButton = QPushButton("Create new Case")
         gridLayout.addWidget(self.newCaseButton, 0, 1)
@@ -71,18 +73,12 @@ class MyWindow(QWidget):
 
         gridLayout = QGridLayout()
 
-        # self.dateButton = QPushButton("Receive Date")
-        # self.dateLabel = QLineEdit()
-        # self.dateButton.clicked.connect(self.showDate)
-
-
-        self.receive_label = QLabel('Receive Date')
+        receive_label = QLabel('Receive Date')
         self.receive_date = QDateEdit(self)
         self.receive_date.setCalendarPopup(True)
         self.receive_date.setDate(QDate.currentDate())
-        gridLayout.addWidget(self.receive_label, 1, 0)
+        gridLayout.addWidget(receive_label, 1, 0)
         gridLayout.addWidget(self.receive_date, 1, 1)
-        # self.receive_date.setDisplayFormat('yyyy-MM-dd')
 
         # Start Date Btn and Lbl
         self.startButton = QPushButton('Start Time')
@@ -101,57 +97,50 @@ class MyWindow(QWidget):
         # Finish Time Btn and Lbl
         self.finishButton = QPushButton('Finish Time')
         self.finishLabel = QLineEdit()
-        # self.finishButton.clicked.connect(self.finishTime)
-        # gridLayout.addWidget(self.finishButton, 4, 0)
-        # gridLayout.addWidget(self.finishLabel, 4, 1)
-        # Finish Time Btn and Lbl
-        self.finishButton = QPushButton('Finish Time')
-        self.finishLabel = QLineEdit()
         self.finishButton.clicked.connect(self.FinishDate)
         gridLayout.addWidget(self.finishButton, 4, 0)
         gridLayout.addWidget(self.finishLabel, 4, 1)
 
         # Total Time
-        self.total_time_label = QLabel('Total Time:')
+        total_time_label = QLabel('Total Time:')
         self.total_time_txt = QLineEdit()
-        gridLayout.addWidget(self.total_time_label, 5, 0)
+        gridLayout.addWidget(total_time_label, 5, 0)
         gridLayout.addWidget(self.total_time_txt, 5, 1)
 
         # Entered By
         self.entered_by_label = QPushButton('Case entered by:')
         self.entered_by_txt = QComboBox()
-        self.entered_by_txt.addItems(['None', 'Nyima Dohnchochog', 'Patricia Bakonyi', 'Sofija Kislitscka',
-                                      'Ailisija Kislitscka', 'Marianne Frei', 'Kristine Irieu', 'Sonam Ny',
-                                      'Gianmarco Palazzi', 'Jakub Wróka'])
+        self.get_user_name()
         gridLayout.addWidget(self.entered_by_label, 6, 0)
         gridLayout.addWidget(self.entered_by_txt, 6, 1)
         self.entered_by_label.clicked.connect(self.your_data)
 
         # Status
-        self.status_label = QLabel('Status:')
-        # self.status_txt = QLineEdit()
+        status_label = QLabel('Status:')
         self.status_txt = QComboBox()
         self.status_txt.addItems(['Open', 'Closed', 'Advised', 'None'])
-        gridLayout.addWidget(self.status_label, 7, 0)
+        gridLayout.addWidget(status_label, 7, 0)
         gridLayout.addWidget(self.status_txt, 7, 1)
+
+
         # SECOND COLUMN
 
         # Requestor
-        self.requestor_label = QLabel('Requestor CA/QA:')
+        requestor_label = QLabel('Requestor CA/QA:')
         self.requestor_txt = QLineEdit()
-        gridLayout.addWidget(self.requestor_label,1, 2)
+        gridLayout.addWidget(requestor_label,1, 2)
         gridLayout.addWidget(self.requestor_txt, 1, 3)
 
         # Requestor GPN
-        self.requestorG_label = QLabel('Requestor GPN:')
+        requestorG_label = QLabel('Requestor GPN:')
         self.requestorG_txt = QLineEdit()
-        gridLayout.addWidget(self.requestorG_label,2, 2)
+        gridLayout.addWidget(requestorG_label,2, 2)
         gridLayout.addWidget(self.requestorG_txt, 2, 3)
 
         # No. of Invoices:
-        self.invoice_label = QLabel('No of Invoices:')
+        invoice_label = QLabel('No of Invoices:')
         self.invoice_txt = QLineEdit()
-        gridLayout.addWidget(self.invoice_label, 3, 2)
+        gridLayout.addWidget(invoice_label, 3, 2)
         gridLayout.addWidget(self.invoice_txt, 3, 3)
 
         # Handover
@@ -160,32 +149,30 @@ class MyWindow(QWidget):
         self.handover_txt.addItems(['None', 'Genesys', 'Other channel'])
         gridLayout.addWidget(self.handover_label, 4, 2)
         gridLayout.addWidget(self.handover_txt, 4, 3)
+
         # Trip ID
-        self.trip_label = QLabel('Case ID:')
+        trip_label = QLabel('Case ID:')
         self.trip_txt = QLineEdit()
-        gridLayout.addWidget(self.trip_label, 5, 2)
+        gridLayout.addWidget(trip_label, 5, 2)
         gridLayout.addWidget(self.trip_txt, 5, 3)
         mainLayout.addLayout(gridLayout)
 
         # Report Name
-        self.report_label = QLabel('Report Name:')
+        report_label = QLabel('Report Name:')
         self.report_txt = QLineEdit()
-        gridLayout.addWidget(self.report_label, 6, 2)
+        gridLayout.addWidget(report_label, 6, 2)
         gridLayout.addWidget(self.report_txt, 6, 3)
 
         # Nr. of iteration
-        self.line_label = QLabel('Total entered line items:')
+        line_label = QLabel('Total entered line items:')
         self.line_txt = QLineEdit()
-        gridLayout.addWidget(self.line_label, 7, 2)
+        gridLayout.addWidget(line_label, 7, 2)
         gridLayout.addWidget(self.line_txt, 7, 3)
 
         # Third COLUMN
 
         # Nr. of iter
-        self.nr_of_iter_label = QLabel('Number of Iterations:')
-        self.nr_of_iter_txt = QComboBox()
-        # Nr. of iter
-        self.nr_of_iter_label = QLabel('Number of Iterations:')
+        nr_of_iter_label = QLabel('Number of Iterations:')
         self.nr_of_iter_txt = QComboBox()
         self.nr_of_iter_txt.addItems([
             'No iteration',
@@ -196,31 +183,32 @@ class MyWindow(QWidget):
             'Iteration - Not due to front',
             'None'
         ])
-        gridLayout.addWidget(self.nr_of_iter_label, 1, 4)
+        gridLayout.addWidget(nr_of_iter_label, 1, 4)
         gridLayout.addWidget(self.nr_of_iter_txt, 1, 5)
 
         # Reason of pending
-        self.reason_label = QLabel('Reason of pending:')
+        reason_label = QLabel('Reason of pending:')
         self.reason_txt = QLineEdit()
-        gridLayout.addWidget(self.reason_label, 2, 4)
+        gridLayout.addWidget(reason_label, 2, 4)
         gridLayout.addWidget(self.reason_txt, 2, 5)
 
         # Action
-        self.action_label = QLabel('Action:')
+        action_label = QLabel('Action:')
         self.action_txt = QLineEdit()
-        gridLayout.addWidget(self.action_label, 3, 4)
+        gridLayout.addWidget(action_label, 3, 4)
         gridLayout.addWidget(self.action_txt, 3, 5)
+
         # Filter cases by open
-        self.filteroff_label = QLabel('Filter cases by open:')
-        self.filteroff_button = QPushButton('Filter Off')
-        gridLayout.addWidget(self.filteroff_label, 4, 4)
+        filteroff_label = QLabel('Filter cases by open:')
+        self.filteroff_button = QPushButton('Filter Open')
+        gridLayout.addWidget(filteroff_label, 4, 4)
         gridLayout.addWidget(self.filteroff_button, 4, 5)
         self.filteroff_button.clicked.connect(self.filter_off)
 
         # Filter cases off
-        self.filter_label = QLabel('Filter cases off:')
-        self.filter_button = QPushButton('Filter Cases')
-        gridLayout.addWidget(self.filter_label, 5, 4)
+        filter_label = QLabel('Filter cases by close:')
+        self.filter_button = QPushButton('Filter Close')
+        gridLayout.addWidget(filter_label, 5, 4)
         gridLayout.addWidget(self.filter_button, 5, 5)
         self.filter_button.clicked.connect(self.filter)
 
@@ -229,13 +217,12 @@ class MyWindow(QWidget):
 
         # Table for DB
         self.tableWidget = QTableWidget()
-        self.tableWidget.setColumnCount(30)
-        col_names = ['ID', 'Start Date', 'Finish Date', 'Event Date', 'Handover Type', 'Requestor CA/ DH',
-                     'Report name', 'Case Entered', 'Requestor GPN', 'Rank', 'No of Invoices', 'Number of credit card line items', 'No of cash expenses',
-                      'Number of Iterations', 'Total entered line items', 'Case Closed', 'Case Pending',
-                      'Time spent total in min', 'Receipt email', 'Confirmation email', 'Reason if pending',
-                      'Date of Action', 'Total Hold Time', 'Hold Continue', 'Hold Time', 'Action', 'Current Status',
-                      'Received Date', 'Total Hold Time', 'Hold Continue']
+        self.tableWidget.setColumnCount(24)
+        col_names = ['ID', 'Start Date', 'Finish Date', 'Event Date', 'Handover Type', 'Requestor CA/ DH', 'Trip ID' ,
+                     'Report name', 'Case Entered', 'Requestor GPN', 'Number of credit card line items', 'No of cash expenses',
+                      'Number of Iterations', 'Case Closed', 'Case Pending', 'Time spent total in min',
+                      'Receipt email', 'Confirmation email', 'Date of Action', 'Action', 'Current Status',
+                     'Receive Date' ,'Total Hold Time', 'Hold Continue' ]
         self.tableWidget.setHorizontalHeaderLabels(col_names)
 
         # Set Bold FONT
@@ -271,8 +258,10 @@ class MyWindow(QWidget):
 
     # establish connection
     def initDB(self):
+
+        accdb_path = Path(__file__).parent / "KubaDatabase3.accdb"
         self.conn = pyodbc.connect(
-            r"DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=C:\Users\Jakub\Desktop\Projekt WSB\TestDB.accdb"
+            r"DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};" + f"DBQ={accdb_path.absolute()}"
         )
         self.cursor = self.conn.cursor()
         self.loadtableData()
@@ -290,10 +279,13 @@ class MyWindow(QWidget):
 
             for row_index, row_data in enumerate(rows):
                 for column_index, col_data in enumerate(row_data):
-                    cell = QTableWidgetItem(str(col_data))
+                    if col_data is None or col_data == "" or col_data == " ":
+                        cell = QTableWidgetItem(" ")
+                    else:
+                        cell = QTableWidgetItem(str(col_data))
+
                     cell.setFlags(cell.flags() ^ Qt.ItemIsEditable)
                     self.tableWidget.setItem(row_index, column_index, cell)
-
         except Exception as e:
             print(f"Error: {e}")
 
@@ -332,10 +324,12 @@ class MyWindow(QWidget):
 
     def holdTime(self):
         if self.hold_start is None:
+            print('Case 1')
             self.hold_start = datetime.now()
             self.holdLabel.setText("Timing...")
         else:
             hold_end = datetime.now()
+            print('Case 2')
             elapsedtime = hold_end - self.hold_start
             elapsed_min = elapsedtime.total_seconds() / 60
             self.holdLabel.setText(str(elapsed_min))
@@ -352,7 +346,7 @@ class MyWindow(QWidget):
 
 
     def createNewCase(self):
-        # Fix bug of adding new case and it is blank and not editable
+
         name="Jakub Wloka"
 
         '''sql = ('INSERT INTO [Expense_Management] ([Start Date], [Finish Date], [Event Date], [Handover Type], '
@@ -382,7 +376,6 @@ class MyWindow(QWidget):
         # manual fill the TableWidget
         row_count = self.tableWidget.rowCount()
         self.tableWidget.insertRow(row_count)
-        #self.tableWidget.setItem(row_count, 0, QTableWidgetItem(user_name))
         self.tableWidget.setItem(row_count, 1, QTableWidgetItem(str(new_id)))
         self.loadtableData()
         self.SelectNewCase()
@@ -417,50 +410,37 @@ class MyWindow(QWidget):
             self.tableWidget.setItem(self.currentrow, 2, QTableWidgetItem(finishtext))
             self.tableWidget.setItem(self.currentrow, 4, QTableWidgetItem(handover))
             self.tableWidget.setItem(self.currentrow, 5, QTableWidgetItem(requestor))
-
-
             self.tableWidget.setItem(self.currentrow, 6, QTableWidgetItem(trip))
             self.tableWidget.setItem(self.currentrow, 7, QTableWidgetItem(report))
             self.tableWidget.setItem(self.currentrow, 8, QTableWidgetItem(case))
             self.tableWidget.setItem(self.currentrow, 9, QTableWidgetItem(requestorG))
-            self.tableWidget.setItem(self.currentrow, 10, QTableWidgetItem(invoices))
-            self.tableWidget.setItem(self.currentrow, 11, QTableWidgetItem(nr_iter))
-            self.tableWidget.setItem(self.currentrow, 12, QTableWidgetItem(line))
-            self.tableWidget.setItem(self.currentrow, 13, QTableWidgetItem(time_spend))
+            self.tableWidget.setItem(self.currentrow, 12, QTableWidgetItem(nr_iter))
+            self.tableWidget.setItem(self.currentrow, 14, QTableWidgetItem(time_spend))
             self.tableWidget.setItem(self.currentrow, 14, QTableWidgetItem(reason))
             self.tableWidget.setItem(self.currentrow, 15, QTableWidgetItem(action))
             self.tableWidget.setItem(self.currentrow, 16, QTableWidgetItem(status))
             self.tableWidget.setItem(self.currentrow, 17, QTableWidgetItem(datetext))
             self.tableWidget.setItem(self.currentrow, 18, QTableWidgetItem(holdtext))
 
-            print("Parameters:", case, starttext, finishtext, datetext, handover, nr_iter, invoices, line, value)
+
+            print("Parameters:", case,",", starttext,",", finishtext,",", datetext,",", handover,",", nr_iter,",", invoices,",", line,",", value)
 
 
             #sql = "UPDATE [Expense_Management] SET [Case entered by]=?, [Start Date]=?, [Finish Date]=?, [Received Date]=?, [Handover Type]=?, [Number of Iterations]=?, [No of Invoices]=?, [Total entered line items]=? WHERE [ID]=?"
 
             sql = """
-                UPDATE [Expense_Management] 
-                SET 
-                    [Case entered by]=?, 
-                    [Start Date]=?, 
-                    [Finish Date]=?, 
-                    [Received Date]=?, 
-                    [Handover Type]=?, 
-                    [Number of Iterations]=?, 
-                    [No of Invoices]=?, 
-                    [Time spent total in min]=?
-                WHERE [ID]=?
-            """
+                            UPDATE [Expense_Management] 
+                            SET 
+                                [Case entered by]=?, 
+                                [Start Date]=?, 
+                                [Finish Date]=?
+                            WHERE [ID]=?
+                        """
 
             self.cursor.execute(sql, (
                 case,
                 starttext,
                 finishtext,
-                datetext,
-                handover,
-                nr_iter,
-                invoices,
-                time_spend,
                 value  # Assuming 'value' is the ID for the WHERE clause
             ))
             self.conn.commit()
@@ -499,7 +479,6 @@ class MyWindow(QWidget):
                                                                                               0) else "No ID"
         self.id_label.setText(f"Selected ID: {clickedID}")
 
-        # Define a helper function to safely get text from table items
         def get_text(row, col):
             item = self.tableWidget.item(row, col)
             return item.text() if item else ""
@@ -549,12 +528,12 @@ class MyWindow(QWidget):
             self.tableWidget.selectRow(0)
             self.tableWidget.scrollToItem(self.tableWidget.item(0, 0), QAbstractItemView.PositionAtTop)
 
-            # Define a helper function to safely get text from table items
+
             def get_text(row, col):
                 item = self.tableWidget.item(row, col)
                 return item.text() if item else ""
 
-            # Use the helper function to safely extract text values from each cell
+
             clickedID = get_text(0, 0)  # ID
             startdate = get_text(0, 1)  # Start Date
             finishdate = get_text(0, 2)  # Finish Date
@@ -624,6 +603,8 @@ class MyWindow(QWidget):
             self.tableWidget.clearContents()
             self.tableWidget.setRowCount(len(rows))
 
+            self.loadtableData()
+
         except Exception as e:
             print(f"Error: {e}")
 
@@ -633,18 +614,9 @@ class MyWindow(QWidget):
         start_date_str = self.startLabel.text()
         hold_time_str = self.holdLabel.text()
 
-        # Uncomment the following line if you want to return from the function when start or finish date is not set
-        # if not self.finishLabel.text() or not self.startLabel.text():
-        #     return
-
         try:
             hold_time_min = float(hold_time_str.split()[0])
-        except:
-            hold_time_min = 0
-
-
-        try:
-            hold_time_min = float(hold_time_str.split()[0])
+            #print('case1')
         except:
             hold_time_min = 0
 
@@ -653,7 +625,7 @@ class MyWindow(QWidget):
         except:
             finish_date = 0
 
-        if start_date_str == 'None':
+        if start_date_str is None or start_date_str.strip() == '':
             return
         else:
             try:
@@ -663,15 +635,7 @@ class MyWindow(QWidget):
 
         try:
             total_time = (finish_date - start_date).total_seconds() / 60 - hold_time_min
-        except:
-            return
-
-        minutes = int(total_time)
-        seconds = int((total_time - minutes) * 60)
-
-        total_time_str = f"{minutes:02d}:{seconds:02d} min"
-        try:
-            total_time = (finish_date - start_date).total_seconds() / 60 - hold_time_min
+            #print('case2')
         except:
             return
 
