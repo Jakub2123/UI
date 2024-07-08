@@ -1,14 +1,3 @@
-'''
-- przy delete usuwanie pzry zaznaczeniu calego rowa
-- case entered by dorobic w excelu
--table do DB do excela ( moze zczytaj z accesa ( mzoe sql query na zczytanie column header)
--po sottowaniu psuje sie
--zrob validacje ( lost focus) na polach typu date
--przy filtrowaniu przemtysl czy excepty sa potrzebne
-**particion table
-
-'''
-
 import sys
 from pathlib import Path
 import pyodbc
